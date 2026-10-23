@@ -8,6 +8,7 @@ period:
   min_days: 350               # 52/53 haftalık mali yıllar için pay bırakır
   max_days: 380
 
+# Ham kavramlar: hangi XBRL etiketi, hangi birim
 concepts:
   revenue:
     description: Toplam net satışlar
@@ -16,6 +17,11 @@ concepts:
       - RevenueFromContractWithCustomerExcludingAssessedTax   # FY2017 sonrası
       - Revenues                                              # Apple'da yalnızca FY2018 raporu
       - SalesRevenueNet                                       # FY2017 ve öncesi
+  gross_profit:
+    description: Brüt kâr
+    unit: USD
+    tags:
+      - GrossProfit
   net_income:
     description: Net kâr
     unit: USD
@@ -26,3 +32,40 @@ concepts:
     unit: USD
     tags:
       - OperatingIncomeLoss
+
+# Türetilmiş metrikler: formül burada tanımlı, hesabı compute_metrics yapar.
+# kind: margin (pay / payda), growth (yıllık değişim), cagr (bileşik yıllık büyüme)
+metrics:
+  revenue_growth:
+    description: Yıllık gelir büyümesi (bir önceki mali yıla göre)
+    kind: growth
+    input: revenue
+    formula: "revenue[t] / revenue[t-1] - 1"
+    unit: ratio
+  gross_margin:
+    description: Brüt marj
+    kind: margin
+    numerator: gross_profit
+    denominator: revenue
+    formula: "gross_profit / revenue"
+    unit: ratio
+  operating_margin:
+    description: Faaliyet marjı
+    kind: margin
+    numerator: operating_income
+    denominator: revenue
+    formula: "operating_income / revenue"
+    unit: ratio
+  net_margin:
+    description: Net marj
+    kind: margin
+    numerator: net_income
+    denominator: revenue
+    formula: "net_income / revenue"
+    unit: ratio
+  revenue_cagr:
+    description: Gelirin bileşik yıllık büyüme oranı (ilk ve son yıl arası)
+    kind: cagr
+    input: revenue
+    formula: "(revenue[son] / revenue[ilk]) ^ (1 / dönem sayısı) - 1"
+    unit: ratio

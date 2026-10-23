@@ -1,0 +1,28 @@
+# Metrik sözleşmesi: agent etiket uydurmaz, bu dosyadaki kuralları uygular.
+# Etiketler öncelik sırasıyla, DÖNEM BAZINDA denenir: her dönem sonu için
+# listedeki ilk dolu etiket seçilir ve çıktıya yazılır.
+
+period:
+  type: annual
+  forms: ["10-K", "10-K/A"]   # 10-Q gibi ara dönem raporları hariç
+  min_days: 350               # 52/53 haftalık mali yıllar için pay bırakır
+  max_days: 380
+
+concepts:
+  revenue:
+    description: Toplam net satışlar
+    unit: USD
+    tags:
+      - RevenueFromContractWithCustomerExcludingAssessedTax   # FY2017 sonrası
+      - Revenues                                              # Apple'da yalnızca FY2018 raporu
+      - SalesRevenueNet                                       # FY2017 ve öncesi
+  net_income:
+    description: Net kâr
+    unit: USD
+    tags:
+      - NetIncomeLoss
+  operating_income:
+    description: Faaliyet kârı
+    unit: USD
+    tags:
+      - OperatingIncomeLoss

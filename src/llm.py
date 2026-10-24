@@ -4,6 +4,11 @@ Neden doğrudan REST? Sıfır ek bağımlılık (Python 3.14 uyumluluk riski yok
 yanıt görünür, token ve gecikme doğrudan ölçülür. Anahtar yalnızca istek başlığında gider,
 URL'ye ve hata mesajlarına yazılmaz.
 
+Model notları (gemini-3.8-flash): düşünme varsayılan olarak açık (medium); desteklenen
+thinking_level değerleri low / medium / high ('minimal' desteklenmez). Gecikmeyi ve token
+maliyetini düşürmek için varsayılanımız 'low'. 'temperature' bu modelde kullanımdan kalkmış
+sayıldığı için varsayılan olarak GÖNDERİLMEZ; isteğe bağlı parametre olarak duruyor.
+
 Smoke test (iki LLM çağrısı, bir gerçek tool çağrısı):
     python -m src.llm
 """
@@ -16,12 +21,13 @@ from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
-DEFAULT_MODEL = "gemini-2.5-flash"  # sabit sürüm; 'latest' takma adı eval'i tekrarlanamaz yapar
+DEFAULT_MODEL = "gemini-3.8-flash"  # sabit sürüm; 'latest' takma adı eval'i tekrarlanamaz yapar
+DEFAULT_THINKING_LEVEL = "low"
 RETRY_STATUS = {429, 500, 502, 503, 504}
 
 
 class LLMError(RuntimeError):
-    """LLM çağrısı başarısız oldu (anahtar yok, kota bitti, geçersiz istek...)."""
+    """LLM çağrısı başarısız oldu (anahtar yok, kota bitti, zaman aşımı, geçersiz istek...)."""
 
 
 def _api_key() -> str:
@@ -61,6 +67,7 @@ def _parse(data: dict, model: str, latency: float) -> dict:
         "usage": {
             "prompt_tokens": usage.get("promptTokenCount", 0),
             "output_tokens": usage.get("candidatesTokenCount", 0),
+            "thought_tokens": usage.get("thoughtsTokenCount", 0),
             "total_tokens": usage.get("totalTokenCount", 0),
         },
         "latency_s": round(latency, 3),
@@ -75,15 +82,24 @@ def tool_results_content(results: list[tuple[str, dict]]) -> dict:
 
 
 def generate(contents: list[dict], system: str | None = None, tools: list[dict] | None = None,
-             model: str = DEFAULT_MODEL, temperature: float = 0.0, max_retries: int = 3,
+             model: str = DEFAULT_MODEL, thinking_level: str | None = DEFAULT_THINKING_LEVEL,
+             temperature: float | None = None, max_retries: int = 2, timeout: float = 90.0,
              client: "httpx.Client | None" = None) -> dict:
     """Gemini'ye bir istek atar.
 
     Returns:
         {'model', 'text', 'function_calls', 'content', 'finish_reason', 'usage', 'latency_s'}.
-        Geçici hatalarda (429/5xx) üstel bekleme ile tekrar dener; kalıcı hatada LLMError fırlatır.
+        Geçici hatalarda (429/5xx, zaman aşımı, bağlantı kopması) üstel bekleme ile tekrar dener;
+        kalıcı hatada LLMError fırlatır (ham httpx hatası dışarı sızmaz).
     """
-    body: dict = {"contents": contents, "generationConfig": {"temperature": temperature}}
+    config: dict = {}
+    if thinking_level:
+        config["thinkingConfig"] = {"thinkingLevel": thinking_level}
+    if temperature is not None:
+        config["temperature"] = temperature
+    body: dict = {"contents": contents}
+    if config:
+        body["generationConfig"] = config
     if system:
         body["systemInstruction"] = {"parts": [{"text": system}]}
     if tools:
@@ -92,16 +108,23 @@ def generate(contents: list[dict], system: str | None = None, tools: list[dict] 
     url = f"{BASE_URL}/{model}:generateContent"
 
     owns_client = client is None
-    client = client or httpx.Client(timeout=60)
+    client = client or httpx.Client(timeout=timeout)
     try:
         for attempt in range(max_retries + 1):
             started = time.monotonic()
-            resp = client.post(url, json=body, headers=headers)
+            try:
+                resp = client.post(url, json=body, headers=headers)
+            except httpx.TransportError as exc:  # zaman aşımı, bağlantı kopması
+                if attempt < max_retries:
+                    time.sleep(2 ** attempt)
+                    continue
+                raise LLMError(f"Gemini'ye ulaşılamadı ({type(exc).__name__}). "
+                               "Ağı kontrol et ya da biraz sonra tekrar dene.") from exc
             latency = time.monotonic() - started
             if resp.status_code == 200:
                 return _parse(resp.json(), model, latency)
             if resp.status_code in RETRY_STATUS and attempt < max_retries:
-                time.sleep(2 ** attempt)  # 1, 2, 4 sn
+                time.sleep(2 ** attempt)  # 1, 2 sn
                 continue
             raise LLMError(f"Gemini HTTP {resp.status_code}: {_error_text(resp)}")
     finally:
@@ -123,9 +146,10 @@ if __name__ == "__main__":
     system_prompt = "Kısa ve Türkçe cevap ver. Gerektiğinde araçları kullan."
     history = [{"role": "user", "parts": [{"text": "Apple'ın (ticker AAPL) CIK numarası nedir?"}]}]
 
+    print(f"model: {DEFAULT_MODEL} | thinking_level: {DEFAULT_THINKING_LEVEL} | istek gönderiliyor...", flush=True)
     first = generate(history, system=system_prompt, tools=declarations)
     print("1. çağrı - araç çağrısı:", first["function_calls"])
-    print("          token:", first["usage"], f"| {first['latency_s']} sn | model: {first['model']}")
+    print("          token:", first["usage"], f"| {first['latency_s']} sn")
     if first["function_calls"]:
         history.append(first["content"])
         results = [(c["name"], resolve_ticker_to_cik(**c["args"])) for c in first["function_calls"]]

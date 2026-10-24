@@ -31,7 +31,7 @@ def test_parses_text_usage_and_latency(monkeypatch):
     prepare(monkeypatch)
     out = llm.generate(USER, client=mock_client(lambda req: ok([{"text": "Selam "}, {"text": "dünya"}])))
     assert out["text"] == "Selam dünya" and out["function_calls"] == []
-    assert out["usage"] == {"prompt_tokens": 10, "output_tokens": 5, "total_tokens": 15}
+    assert out["usage"] == {"prompt_tokens": 10, "output_tokens": 5, "thought_tokens": 0, "total_tokens": 15}
     assert out["model"] == llm.DEFAULT_MODEL and out["latency_s"] >= 0
 
 
@@ -140,3 +140,50 @@ def test_tool_results_content_shape():
     assert content["role"] == "user"
     assert content["parts"][0] == {"functionResponse": {"name": "a", "response": {"result": {"x": 1}}}}
     assert content["parts"][1]["functionResponse"]["response"]["result"] == {"error": "yok"}
+
+
+def test_timeout_is_retried_then_succeeds(monkeypatch):
+    sleeps = prepare(monkeypatch)
+    calls = {"n": 0}
+
+    def handler(req):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise httpx.ReadTimeout("The read operation timed out")
+        return ok([{"text": "geldi"}])
+
+    out = llm.generate(USER, client=mock_client(handler))
+    assert out["text"] == "geldi" and calls["n"] == 2 and sleeps == [1]
+
+
+def test_timeout_exhausted_raises_llm_error_not_raw_httpx_error(monkeypatch):
+    prepare(monkeypatch)
+    calls = {"n": 0}
+
+    def handler(req):
+        calls["n"] += 1
+        raise httpx.ReadTimeout("The read operation timed out")
+
+    try:
+        llm.generate(USER, max_retries=2, client=mock_client(handler))
+    except llm.LLMError as exc:
+        assert "ulaşılamadı" in str(exc) and "ReadTimeout" in str(exc) and calls["n"] == 3
+    else:
+        raise AssertionError("LLMError beklenirdi")
+
+
+def test_thinking_level_defaults_to_low_and_temperature_is_not_sent_by_default(monkeypatch):
+    prepare(monkeypatch)
+    bodies = []
+
+    def handler(req):
+        bodies.append(json.loads(req.content))
+        return ok([{"text": "x"}])
+
+    client = mock_client(handler)
+    llm.generate(USER, client=client)
+    llm.generate(USER, thinking_level="high", temperature=0.2, client=client)
+    llm.generate(USER, thinking_level=None, client=client)
+    assert bodies[0]["generationConfig"] == {"thinkingConfig": {"thinkingLevel": "low"}}
+    assert bodies[1]["generationConfig"] == {"thinkingConfig": {"thinkingLevel": "high"}, "temperature": 0.2}
+    assert "generationConfig" not in bodies[2]

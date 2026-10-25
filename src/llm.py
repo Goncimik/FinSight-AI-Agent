@@ -4,7 +4,7 @@ Neden doğrudan REST? Sıfır ek bağımlılık (Python 3.14 uyumluluk riski yok
 yanıt görünür, token ve gecikme doğrudan ölçülür. Anahtar yalnızca istek başlığında gider,
 URL'ye ve hata mesajlarına yazılmaz.
 
-Model notları (gemini-3.8-flash): düşünme varsayılan olarak açık (medium); desteklenen
+Model notları (gemini-3.x flash ailesi): düşünme varsayılan olarak açık (medium); desteklenen
 thinking_level değerleri low / medium / high ('minimal' desteklenmez). Gecikmeyi ve token
 maliyetini düşürmek için varsayılanımız 'low'. 'temperature' bu modelde kullanımdan kalkmış
 sayıldığı için varsayılan olarak GÖNDERİLMEZ; isteğe bağlı parametre olarak duruyor.
@@ -21,7 +21,7 @@ from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
-DEFAULT_MODEL = "gemini-3.8-flash"  # sabit sürüm; 'latest' takma adı eval'i tekrarlanamaz yapar
+DEFAULT_MODEL = "gemini-3.5-flash"  # sabit sürüm; 'latest' takma adı eval'i tekrarlanamaz yapar
 DEFAULT_THINKING_LEVEL = "low"
 RETRY_STATUS = {429, 500, 502, 503, 504}
 
@@ -83,7 +83,7 @@ def tool_results_content(results: list[tuple[str, dict]]) -> dict:
 
 def generate(contents: list[dict], system: str | None = None, tools: list[dict] | None = None,
              model: str = DEFAULT_MODEL, thinking_level: str | None = DEFAULT_THINKING_LEVEL,
-             temperature: float | None = None, max_retries: int = 2, timeout: float = 90.0,
+             temperature: float | None = None, max_retries: int = 2, timeout: float = 180.0,
              client: "httpx.Client | None" = None) -> dict:
     """Gemini'ye bir istek atar.
 

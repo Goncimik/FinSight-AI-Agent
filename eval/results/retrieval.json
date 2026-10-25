@@ -1,0 +1,56 @@
+[
+  {
+    "id": "T01",
+    "answerable": true,
+    "hit5_filtered": true,
+    "hit5_unfiltered": true
+  },
+  {
+    "id": "T02",
+    "answerable": true,
+    "hit5_filtered": true,
+    "hit5_unfiltered": true
+  },
+  {
+    "id": "T03",
+    "answerable": true,
+    "hit5_filtered": true,
+    "hit5_unfiltered": true
+  },
+  {
+    "id": "T04",
+    "answerable": true,
+    "hit5_filtered": true,
+    "hit5_unfiltered": false
+  },
+  {
+    "id": "T05",
+    "answerable": true,
+    "hit5_filtered": true,
+    "hit5_unfiltered": true
+  },
+  {
+    "id": "T06",
+    "answerable": true,
+    "hit5_filtered": true,
+    "hit5_unfiltered": true
+  },
+  {
+    "id": "T07",
+    "answerable": true,
+    "hit5_filtered": true,
+    "hit5_unfiltered": true
+  },
+  {
+    "id": "T08",
+    "answerable": true,
+    "hit5_filtered": true,
+    "hit5_unfiltered": true
+  },
+  {
+    "id": "T09",
+    "answerable": true,
+    "hit5_filtered": true,
+    "hit5_unfiltered": true
+  }
+]

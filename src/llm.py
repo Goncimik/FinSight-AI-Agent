@@ -4,6 +4,11 @@ Neden doğrudan REST? Sıfır ek bağımlılık (Python 3.14 uyumluluk riski yok
 yanıt görünür, token ve gecikme doğrudan ölçülür. Anahtar yalnızca istek başlığında gider,
 URL'ye ve hata mesajlarına yazılmaz.
 
+Kota yönetimi (ücretsiz katman): 429 geldiğinde sunucunun bildirdiği bekleme süresi (retryDelay) kadar
+beklenip yeniden denenir (dakikalık limit). Günlük kota dolduysa (quotaId 'PerDay' ya da çok uzun bekleme)
+boşuna denenmez, QuotaExhausted fırlatılır. LLM_MIN_INTERVAL ortam değişkeni ardışık istekler arasına
+en az o kadar saniye koyar (ör. LLM_MIN_INTERVAL=6 -> dakikada en fazla 10 istek).
+
 Model notları (gemini-3.x flash ailesi): düşünme varsayılan olarak açık (medium); desteklenen
 thinking_level değerleri low / medium / high ('minimal' desteklenmez). Gecikmeyi ve token
 maliyetini düşürmek için varsayılanımız 'low'. 'temperature' bu modelde kullanımdan kalkmış
@@ -13,6 +18,7 @@ Smoke test (iki LLM çağrısı, bir gerçek tool çağrısı):
     python -m src.llm
 """
 import os
+import re
 import time
 from pathlib import Path
 
@@ -24,10 +30,17 @@ BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 DEFAULT_MODEL = "gemini-3.5-flash"  # sabit sürüm; 'latest' takma adı eval'i tekrarlanamaz yapar
 DEFAULT_THINKING_LEVEL = "low"
 RETRY_STATUS = {429, 500, 502, 503, 504}
+MAX_QUOTA_WAIT = 120.0  # bundan uzun bekleme isteyen 429 günlük kota sayılır
+MIN_INTERVAL = float(os.getenv("LLM_MIN_INTERVAL", "0") or 0)
+_last_call = 0.0
 
 
 class LLMError(RuntimeError):
     """LLM çağrısı başarısız oldu (anahtar yok, kota bitti, zaman aşımı, geçersiz istek...)."""
+
+
+class QuotaExhausted(LLMError):
+    """Günlük kota doldu; beklemek yeniden denemekten daha anlamsız, kota sıfırlanana kadar durulmalı."""
 
 
 def _api_key() -> str:
@@ -36,6 +49,42 @@ def _api_key() -> str:
     if not key:
         raise LLMError("GEMINI_API_KEY bulunamadı. .env dosyasına ekle (bkz. .env.example).")
     return key
+
+
+def _throttle() -> None:
+    """Ardışık istekler arasına MIN_INTERVAL saniye koyar (dakikalık istek limitini aşmamak için)."""
+    global _last_call
+    wait = MIN_INTERVAL - (time.monotonic() - _last_call)
+    if wait > 0:
+        time.sleep(wait)
+    _last_call = time.monotonic()
+
+
+def _quota_info(resp: "httpx.Response") -> tuple[str, float | None, list[str]]:
+    """429 gövdesinden (mesaj, bekleme_sn ya da None, kota_kimlikleri) çıkarır."""
+    try:
+        err = resp.json()["error"]
+    except Exception:  # noqa: BLE001 - gövde JSON değilse ham metne düş
+        return resp.text[:300], None, []
+    message = str(err.get("message", ""))
+    delay, ids = None, []
+    for detail in err.get("details") or []:
+        kind = str(detail.get("@type", ""))
+        if kind.endswith("RetryInfo"):
+            found = re.search(r"[\d.]+", str(detail.get("retryDelay", "")))
+            if found:
+                delay = float(found.group())
+        elif kind.endswith("QuotaFailure"):
+            ids += [v.get("quotaId") or v.get("quotaMetric") or "" for v in detail.get("violations", [])]
+    if delay is None:
+        found = re.search(r"retry in ([\d.]+)\s*s", message, re.IGNORECASE)
+        if found:
+            delay = float(found.group(1))
+    return message, delay, ids
+
+
+def _is_daily(delay: float | None, ids: list[str]) -> bool:
+    return any("perday" in i.lower().replace("_", "") for i in ids) or (delay is not None and delay > MAX_QUOTA_WAIT)
 
 
 def _error_text(resp: "httpx.Response") -> str:
@@ -83,14 +132,14 @@ def tool_results_content(results: list[tuple[str, dict]]) -> dict:
 
 def generate(contents: list[dict], system: str | None = None, tools: list[dict] | None = None,
              model: str = DEFAULT_MODEL, thinking_level: str | None = DEFAULT_THINKING_LEVEL,
-             temperature: float | None = None, max_retries: int = 2, timeout: float = 180.0,
+             temperature: float | None = None, max_retries: int = 3, timeout: float = 180.0,
              client: "httpx.Client | None" = None) -> dict:
     """Gemini'ye bir istek atar.
 
     Returns:
         {'model', 'text', 'function_calls', 'content', 'finish_reason', 'usage', 'latency_s'}.
-        Geçici hatalarda (429/5xx, zaman aşımı, bağlantı kopması) üstel bekleme ile tekrar dener;
-        kalıcı hatada LLMError fırlatır (ham httpx hatası dışarı sızmaz).
+        Geçici hatalarda (429/5xx, zaman aşımı, bağlantı kopması) bekleyip tekrar dener; kalıcı hatada
+        LLMError, günlük kota dolduysa QuotaExhausted fırlatır (ham httpx hatası dışarı sızmaz).
     """
     config: dict = {}
     if thinking_level:
@@ -111,6 +160,7 @@ def generate(contents: list[dict], system: str | None = None, tools: list[dict] 
     client = client or httpx.Client(timeout=timeout)
     try:
         for attempt in range(max_retries + 1):
+            _throttle()
             started = time.monotonic()
             try:
                 resp = client.post(url, json=body, headers=headers)
@@ -123,8 +173,18 @@ def generate(contents: list[dict], system: str | None = None, tools: list[dict] 
             latency = time.monotonic() - started
             if resp.status_code == 200:
                 return _parse(resp.json(), model, latency)
-            if resp.status_code in RETRY_STATUS and attempt < max_retries:
-                time.sleep(2 ** attempt)  # 1, 2 sn
+            if resp.status_code == 429:
+                _, delay, ids = _quota_info(resp)
+                if _is_daily(delay, ids):
+                    detail = ", ".join(i for i in ids if i) or f"sunucu {delay:.0f} sn bekleme istedi"
+                    raise QuotaExhausted(
+                        f"Günlük kota doldu ({detail}). Kota Pasifik saatiyle gece yarısı sıfırlanır "
+                        "(Türkiye'de yaklaşık 10:00-11:00). Sonra aynı komutu tekrar çalıştır.")
+                if attempt < max_retries:
+                    time.sleep(delay + 1 if delay is not None else 2 ** attempt)
+                    continue
+            elif resp.status_code in RETRY_STATUS and attempt < max_retries:
+                time.sleep(2 ** attempt)  # 1, 2, 4 sn
                 continue
             raise LLMError(f"Gemini HTTP {resp.status_code}: {_error_text(resp)}")
     finally:

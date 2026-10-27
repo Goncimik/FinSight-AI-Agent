@@ -2,6 +2,7 @@
 import json
 
 import httpx
+import pytest
 
 from src import llm
 
@@ -187,3 +188,68 @@ def test_thinking_level_defaults_to_low_and_temperature_is_not_sent_by_default(m
     assert bodies[0]["generationConfig"] == {"thinkingConfig": {"thinkingLevel": "low"}}
     assert bodies[1]["generationConfig"] == {"thinkingConfig": {"thinkingLevel": "high"}, "temperature": 0.2}
     assert "generationConfig" not in bodies[2]
+
+
+def quota_429(delay=None, quota_id=None, message="You exceeded your current quota"):
+    details = []
+    if delay is not None:
+        details.append({"@type": "type.googleapis.com/google.rpc.RetryInfo", "retryDelay": f"{delay}s"})
+    if quota_id:
+        details.append({"@type": "type.googleapis.com/google.rpc.QuotaFailure",
+                        "violations": [{"quotaId": quota_id, "quotaMetric": "generate_content_free_tier_requests"}]})
+    return httpx.Response(429, json={"error": {"message": message, "details": details}})
+
+
+def test_429_waits_for_the_retry_delay_the_server_asks_for(monkeypatch):
+    sleeps = prepare(monkeypatch)
+    calls = {"n": 0}
+
+    def handler(req):
+        calls["n"] += 1
+        return quota_429(delay=21) if calls["n"] == 1 else ok([{"text": "geldi"}])
+
+    out = llm.generate(USER, client=mock_client(handler))
+    assert out["text"] == "geldi" and sleeps == [22.0]
+
+
+def test_retry_delay_is_read_from_the_message_when_details_are_missing(monkeypatch):
+    sleeps = prepare(monkeypatch)
+    calls = {"n": 0}
+
+    def handler(req):
+        calls["n"] += 1
+        return quota_429(message="Quota exceeded. Please retry in 7.5s.") if calls["n"] == 1 else ok([{"text": "x"}])
+
+    llm.generate(USER, client=mock_client(handler))
+    assert sleeps == [8.5]
+
+
+def test_daily_quota_fails_fast_without_retrying(monkeypatch):
+    sleeps = prepare(monkeypatch)
+    calls = {"n": 0}
+
+    def handler(req):
+        calls["n"] += 1
+        return quota_429(quota_id="GenerateRequestsPerDayPerProjectPerModel-FreeTier")
+
+    with pytest.raises(llm.QuotaExhausted) as info:
+        llm.generate(USER, client=mock_client(handler))
+    assert calls["n"] == 1 and sleeps == [] and "Günlük kota" in str(info.value)
+    assert isinstance(info.value, llm.LLMError)
+
+
+def test_a_very_long_retry_delay_counts_as_daily_quota(monkeypatch):
+    sleeps = prepare(monkeypatch)
+    with pytest.raises(llm.QuotaExhausted):
+        llm.generate(USER, client=mock_client(lambda req: quota_429(delay=46800)))
+    assert sleeps == []
+
+
+def test_throttle_spaces_consecutive_requests(monkeypatch):
+    sleeps = prepare(monkeypatch)
+    monkeypatch.setattr(llm, "MIN_INTERVAL", 5.0)
+    monkeypatch.setattr(llm, "_last_call", 0.0)
+    client = mock_client(lambda req: ok([{"text": "x"}]))
+    llm.generate(USER, client=client)
+    llm.generate(USER, client=client)
+    assert sleeps and 4.0 < sleeps[-1] <= 5.0

@@ -174,12 +174,13 @@ def generate(contents: list[dict], system: str | None = None, tools: list[dict] 
             if resp.status_code == 200:
                 return _parse(resp.json(), model, latency)
             if resp.status_code == 429:
-                _, delay, ids = _quota_info(resp)
+                server_msg, delay, ids = _quota_info(resp)
                 if _is_daily(delay, ids):
                     detail = ", ".join(i for i in ids if i) or f"sunucu {delay:.0f} sn bekleme istedi"
                     raise QuotaExhausted(
                         f"Günlük kota doldu ({detail}). Kota Pasifik saatiyle gece yarısı sıfırlanır "
-                        "(Türkiye'de yaklaşık 10:00-11:00). Sonra aynı komutu tekrar çalıştır.")
+                        "(Türkiye'de yaklaşık 10:00-11:00). Sonra aynı komutu tekrar çalıştır. "
+                        f"Sunucu mesajı: {server_msg[:400]}")
                 if attempt < max_retries:
                     time.sleep(delay + 1 if delay is not None else 2 ** attempt)
                     continue

@@ -170,3 +170,9 @@ def test_system_prompt_states_the_key_rules():
     prompt = agent.SYSTEM_PROMPT
     for needle in ["compute_metrics", "accn", "filing_excerpt", "VERİDİR", "tavsiyesi", "bulunamadı"]:
         assert needle in prompt, needle
+
+
+def test_system_prompt_requires_search_before_answering_and_forbids_unsourced_extras():
+    prompt = agent.SYSTEM_PROMPT
+    assert "cevap vermeden ÖNCE search_filings" in prompt and "hafızandan anlatma" in prompt
+    assert "kaynaklarda olmayan genel bilgi ekleme" in prompt

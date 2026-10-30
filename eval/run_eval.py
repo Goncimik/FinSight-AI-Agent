@@ -48,8 +48,35 @@ def select_items(items: list[dict], ids: str | None) -> list[dict]:
     return [i for i in items if i["id"] in wanted]
 
 
-def result_path(system: str, model: str) -> Path:
-    return RESULTS / f"{system}__{model}.jsonl"
+def result_path(system: str, model: str, tag: str = "") -> Path:
+    """Sonuç dosyası. tag yalnızca agent içindir (prompt/kod sürümü); baseline sürümden bağımsızdır."""
+    suffix = f"__{tag}" if tag and system == "agent" else ""
+    return RESULTS / f"{system}__{model}{suffix}.jsonl"
+
+
+def rescore(items: list[dict], path: Path) -> int:
+    """Kayıtlı cevapları güncel puanlayıcıyla yeniden puanlar (LLM çağırmaz).
+
+    İlk puanlar passed_initial / passed_loose_initial alanlarında saklanır (şeffaflık).
+    Döndürdüğü sayı: sonucu değişen madde sayısı.
+    """
+    records = load_results(path)
+    by_id = {i["id"]: i for i in items}
+    changed = 0
+    for rid, rec in records.items():
+        item = by_id.get(rid)
+        if item is None:
+            continue
+        res = {"answer": rec["answer"], "status": rec["status"], "trace": rec["trace"]}
+        strict, loose = score(item, res), score(item, res, strict=False)
+        rec.setdefault("passed_initial", rec["passed"])
+        rec.setdefault("passed_loose_initial", rec["passed_loose"])
+        if (strict["passed"], loose["passed"]) != (rec["passed"], rec["passed_loose"]):
+            changed += 1
+        rec["passed"], rec["passed_loose"], rec["checks"] = strict["passed"], loose["passed"], strict["checks"]
+    if records:
+        path.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in records.values()) + "\n", encoding="utf-8")
+    return changed
 
 
 def load_results(path: Path) -> dict:
@@ -181,19 +208,27 @@ def main() -> None:
     parser.add_argument("--force", action="store_true")
     parser.add_argument("--retry-errors", action="store_true")
     parser.add_argument("--report", action="store_true", help="LLM çağırmadan yalnızca tabloyu yazdır")
+    parser.add_argument("--tag", default="", help="agent sonuç dosyasına eklenen sürüm etiketi (ör. v2)")
+    parser.add_argument("--rescore", action="store_true", help="kayıtlı cevapları güncel puanlayıcıyla yeniden puanla")
     args = parser.parse_args()
 
     all_items = load_golden()
-    if not args.report:
+    if args.rescore:
+        for system in ("baseline", "agent"):
+            changed = rescore(all_items, result_path(system, args.model, args.tag))
+            print(f"[{system}] yeniden puanlandı, {changed} maddenin sonucu değişti")
+    elif not args.report:
         llm = functools.partial(generate, model=args.model)
         for system in (["baseline", "agent"] if args.system == "both" else [args.system]):
             run_system(system, select_items(all_items, args.ids), llm, args.model, args.max_steps,
-                       result_path(system, args.model), args.force, args.retry_errors, args.pause)
-    records = {s: load_results(result_path(s, args.model)) for s in ("baseline", "agent")}
-    report = f"Model: {args.model}\n\n" + format_report(all_items, records)
+                       result_path(system, args.model, args.tag), args.force, args.retry_errors, args.pause)
+    records = {s: load_results(result_path(s, args.model, args.tag)) for s in ("baseline", "agent")}
+    label = f"{args.model}" + (f" ({args.tag})" if args.tag else "")
+    report = f"Model: {label}\n\n" + format_report(all_items, records)
     print("\n" + report)
     RESULTS.mkdir(parents=True, exist_ok=True)
-    (RESULTS / f"results_table__{args.model}.md").write_text(report + "\n", encoding="utf-8")
+    suffix = f"__{args.tag}" if args.tag else ""
+    (RESULTS / f"results_table__{args.model}{suffix}.md").write_text(report + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":

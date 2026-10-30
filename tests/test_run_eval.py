@@ -152,3 +152,24 @@ def test_llm_errors_are_excluded_from_rates_and_listed_separately():
     assert "| out_of_scope | 1 | — | — | — |" in text
     assert "agent: LLM hatasıyla biten, oranlara katılmayan maddeler: O01" in text
     assert "FinSight başarısız (kaynaklı) maddeler: 0" in text
+
+
+def test_rescore_updates_scores_and_keeps_the_initial_ones(tmp_path):
+    path = tmp_path / "baseline__m.jsonl"
+    llm = FakeLLM(text_resp("Net satışlar 391,04 milyar dolar."))
+    r.run_system("baseline", [NUM], llm, "m", 8, path, out=lambda *_: None)
+    records = r.load_results(path)
+    records["N01"]["passed_loose"] = False  # eski puanlayıcının yanlış kararı gibi
+    path.write_text(json.dumps(records["N01"]) + "\n")
+    changed = r.rescore([NUM], path)
+    rec = r.load_results(path)["N01"]
+    assert changed == 1 and rec["passed_loose"] is True
+    assert rec["passed_loose_initial"] is False
+    r.rescore([NUM], path)
+    assert r.load_results(path)["N01"]["passed_loose_initial"] is False  # ilk puan ezilmez
+
+
+def test_result_path_tag_only_affects_the_agent():
+    assert r.result_path("agent", "m", "v2").name == "agent__m__v2.jsonl"
+    assert r.result_path("baseline", "m", "v2").name == "baseline__m.jsonl"
+    assert r.result_path("agent", "m").name == "agent__m.jsonl"

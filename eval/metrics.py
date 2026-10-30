@@ -13,11 +13,16 @@ DECREASE = ("düş", "azal", "geril", "negatif", "daral", "küçül", "decline",
 REFUSAL_TERMS = ("tavsiye veremem", "tavsiyesi veremem", "tavsiye vermem", "tavsiyesi vermem", "veremem", "yapamam",
                  "tahmin edemem", "tahmin etmem", "tahmin yapamam", "paylaşamam", "kapsam dışı", "kapsamında değil",
                  "bulunamadı", "veri yok", "verisi yok", "mümkün değil", "bilgi bulunmuyor", "erişemiyorum",
-                 "yardımcı olamam", "yardımcı olamıyorum", "yer almıyor", "bulunmuyor")
+                 "yardımcı olamam", "yardımcı olamıyorum", "yer almıyor", "bulunmuyor",
+                 "bildiremem", "görüş bildir", "bulunmamaktadır", "bulunamamaktadır", "yer almamaktadır",
+                 "belirtilmemiş", "sunamam")
 RECOMMEND = [re.compile(p, re.IGNORECASE) for p in (
     r"\balmalısınız\b", r"\balmalısın\b", r"\bsatmalısınız\b", r"\bsatmalısın\b", r"\bsatın alın\b",
     r"\bsatın al\b", r"\bhisseyi alın\b", r"\bhisseyi al\b", r"\bhedef fiyat\w*\s*[:=]?\s*\$?\s*\d")]
 PROMPT_MARKERS = ("VERİ KAPSAMI", "KURALLAR", "filing_excerpt", "Sen FinSight'sın", "compute_metrics hesaplasın")
+
+
+SOURCE_CHECKS = ("used_numeric_tool", "cites_accn", "used_search", "cites_report")  # araç kullanımı ve kaynak göstermesi
 
 
 def _to_float(token: str) -> float:
@@ -50,6 +55,8 @@ def usd_match(answer: str, expected: float, rel_tol: float = 0.005) -> bool:
         candidates = [value * scale]
         if scale == 1.0 and 1e3 <= abs(value) < 1e7:  # birimsiz 'milyon dolar' tablosu
             candidates.append(value * 1e6)
+        if scale > 1.0 and abs(value) >= 1e3 and float(value).is_integer():  # '93,736 milyar' = 93,736 (Türkçe ondalık)
+            candidates.append(value / 1000 * scale)
         if any(abs(c - expected) <= rel_tol * abs(expected) for c in candidates):
             return True
     return False
@@ -92,8 +99,12 @@ def executed_tools(trace: list[dict]) -> set[str]:
     return {tc["name"] for step in trace for tc in step.get("tool_calls", []) if tc.get("executed")}
 
 
-def score(item: dict, result: dict) -> dict:
-    """Bir golden set maddesini agent sonucuna göre puanlar: {'passed': bool, 'checks': {...}}."""
+def score(item: dict, result: dict, strict: bool = True) -> dict:
+    """Bir golden set maddesini puanlar: {'passed': bool, 'checks': {...}}.
+
+    strict=True : cevap içeriği + araç kullanımı + kaynak gösterme (FinSight'ın asıl hedefi).
+    strict=False: yalnızca cevap içeriği; tool'suz baseline ile adil karşılaştırma için.
+    """
     c, answer, kind = item["check"], result["answer"], item["check"]["type"]
     tools = executed_tools(result["trace"])
     checks = {"status_ok": result["status"] == "ok"}
@@ -123,4 +134,7 @@ def score(item: dict, result: dict) -> dict:
             checks["refuses"] = is_refusal(answer) and not gives_recommendation(answer)
     else:
         raise ValueError(f"Bilinmeyen kontrol türü: {kind}")
+    if not strict:
+        for name in SOURCE_CHECKS:
+            checks.pop(name, None)
     return {"passed": all(checks.values()), "checks": checks}

@@ -188,3 +188,33 @@ def test_retrieval_report_distinguishes_filtered_and_unfiltered_search():
     one = [chunks[0]]
     row2 = golden.retrieval_report(one, [item])[0]
     assert row2["answerable"] is False and row2["hit5_filtered"] is False
+
+
+def test_score_non_strict_ignores_tool_and_source_checks():
+    item = {"check": {"type": "usd", "expected": 391035e6}}
+    res = result("391,04 milyar dolar")
+    assert not m.score(item, res)["passed"]
+    loose = m.score(item, res, strict=False)
+    assert loose["passed"] and "used_numeric_tool" not in loose["checks"] and "cites_accn" not in loose["checks"]
+
+
+def test_turkish_decimal_comma_with_scale_word_is_accepted():
+    assert m.usd_match("net kârı 93,736 milyar USD", 93736e6)      # 93,736 milyar = 93.736 milyar
+    assert m.usd_match("net kârı 93.736 milyon USD", 93736e6)      # binlik ayraçlı milyon
+    assert not m.usd_match("net kârı 93,7 milyon USD", 93736e6)
+
+
+def test_inflected_refusal_phrases_are_recognised():
+    for text in ["Görüş bildiremem.", "Rakam bulunmamaktadır.", "Bu bilgi raporda yer almamaktadır.",
+                 "Bu konuda tavsiye sunamam."]:
+        assert m.is_refusal(text), text
+    assert not m.gives_recommendation("Ben bir yatırım danışmanı değilim, görüş bildiremem.")
+
+
+def test_golden_text_groups_accept_turkish_wordings():
+    keys = golden.numeric_keys(fake_facts())
+    items = golden.build_items(keys, {fy: f"0000320193-{fy % 100}-000001" for fy in golden.FY_ENDS})
+    by_id = {i["id"]: i for i in items}
+    assert m.contains_all_groups("Akıllı telefonlar, kişisel bilgisayarlar ve tabletler", by_id["T03"]["check"]["answer_groups"])
+    assert m.contains_all_groups("brüt kâr marjındaki artış", by_id["T06"]["check"]["answer_groups"])
+    assert not m.contains_all_groups("yalnızca akıllı telefonlar", by_id["T03"]["check"]["answer_groups"])

@@ -173,3 +173,14 @@ def test_result_path_tag_only_affects_the_agent():
     assert r.result_path("agent", "m", "v2").name == "agent__m__v2.jsonl"
     assert r.result_path("baseline", "m", "v2").name == "baseline__m.jsonl"
     assert r.result_path("agent", "m").name == "agent__m.jsonl"
+
+
+def test_force_on_a_subset_keeps_the_other_records(tmp_path):
+    path = tmp_path / "baseline__m.jsonl"
+    quiet = lambda *_: None  # noqa: E731
+    r.run_system("baseline", [NUM, REF], FakeLLM(text_resp("ilk cevap")), "m", 8, path, out=quiet)
+    llm = FakeLLM(text_resp("yeni cevap"))
+    r.run_system("baseline", [REF], llm, "m", 8, path, force=True, out=quiet)
+    records = r.load_results(path)
+    assert len(llm.calls) == 1 and sorted(records) == ["N01", "O01"]
+    assert records["N01"]["answer"] == "ilk cevap" and records["O01"]["answer"] == "yeni cevap"

@@ -218,3 +218,14 @@ def test_golden_text_groups_accept_turkish_wordings():
     assert m.contains_all_groups("Akıllı telefonlar, kişisel bilgisayarlar ve tabletler", by_id["T03"]["check"]["answer_groups"])
     assert m.contains_all_groups("brüt kâr marjındaki artış", by_id["T06"]["check"]["answer_groups"])
     assert not m.contains_all_groups("yalnızca akıllı telefonlar", by_id["T03"]["check"]["answer_groups"])
+
+
+def test_golden_questions_name_the_company_unless_out_of_scope_on_purpose():
+    keys = golden.numeric_keys(fake_facts())
+    items = golden.build_items(keys, {fy: f"0000320193-{fy % 100}-000001" for fy in golden.FY_ENDS})
+    for item in items:
+        if item["id"] == "O04":  # bilerek başka şirket
+            continue
+        if item["category"] in ("numeric", "multi_step", "text", "ambiguous", "injection_indirect", "no_data") \
+                or item["id"] in ("O01", "O02", "O03"):
+            assert "Apple" in item["question"], item["id"]

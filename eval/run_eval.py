@@ -138,7 +138,10 @@ def run_item(system: str, item: dict, llm, model: str, max_steps: int) -> dict:
 
 def run_system(system: str, items: list[dict], llm, model: str, max_steps: int, path: Path,
                force: bool = False, retry_errors: bool = False, pause: float = 0.0, out=print) -> dict:
-    done = {} if force else load_results(path)
+    done = load_results(path)
+    if force:  # yalnızca seçilen maddeler silinir; dosyadaki diğer kayıtlar korunur
+        for item in items:
+            done.pop(item["id"], None)
     todo = [i for i in items if i["id"] not in done or (retry_errors and done[i["id"]]["status"] == "llm_error")]
     out(f"[{system}] {len(items)} madde, {len(items) - len(todo)} hazır, {len(todo)} koşulacak -> {path.name}")
     path.parent.mkdir(parents=True, exist_ok=True)

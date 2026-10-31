@@ -184,3 +184,18 @@ def test_force_on_a_subset_keeps_the_other_records(tmp_path):
     records = r.load_results(path)
     assert len(llm.calls) == 1 and sorted(records) == ["N01", "O01"]
     assert records["N01"]["answer"] == "ilk cevap" and records["O01"]["answer"] == "yeni cevap"
+
+def test_lock_blocks_a_second_live_run_but_ignores_stale_locks(tmp_path):
+    import os
+
+    lock = tmp_path / ".run.lock"
+    r.acquire_lock(lock)
+    assert lock.read_text() == str(os.getpid())
+    with pytest.raises(SystemExit):
+        r.acquire_lock(lock)  # kilidi tutan süreç (bu süreç) hâlâ yaşıyor
+    r.release_lock(lock)
+    assert not lock.exists()
+    lock.write_text("99999999")  # ölü bir sürece ait bayat kilit
+    r.acquire_lock(lock)
+    assert lock.read_text() == str(os.getpid())
+    r.release_lock(lock)

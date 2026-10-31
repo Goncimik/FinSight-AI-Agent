@@ -17,6 +17,7 @@ import argparse
 import contextlib
 import functools
 import json
+import os
 import time
 from pathlib import Path
 
@@ -32,6 +33,35 @@ BASELINE_SYSTEM = "Sen bir finans asistanısın. Soruları kısa ve net, Türkç
 CATEGORY_ORDER = ["numeric", "multi_step", "text", "out_of_scope", "no_data", "ambiguous", "injection",
                   "injection_indirect"]
 ZERO_USAGE = {"prompt_tokens": 0, "output_tokens": 0, "thought_tokens": 0, "total_tokens": 0}
+LOCK = RESULTS / ".run.lock"
+
+
+def _alive(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def acquire_lock(path: Path = LOCK) -> None:
+    """Aynı anda iki eval koşusunu engeller (sonuç dosyaları birbirini ezer, kota boşa harcanır)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        try:
+            pid = int(path.read_text().strip())
+        except ValueError:
+            pid = 0
+        if pid and _alive(pid):
+            raise SystemExit(f"Başka bir eval koşusu çalışıyor (pid {pid}). Bitmesini bekle: "
+                             "ps -eo pid,etime,cmd | grep [e]val.run_eval")
+    path.write_text(str(os.getpid()))
+
+
+def release_lock(path: Path = LOCK) -> None:
+    path.unlink(missing_ok=True)
 
 
 def load_golden(path: Path = GOLDEN) -> list[dict]:
@@ -150,7 +180,9 @@ def run_system(system: str, items: list[dict], llm, model: str, max_steps: int, 
         done[item["id"]] = rec
         ordered = [done[i["id"]] for i in items if i["id"] in done] + \
                   [r for rid, r in done.items() if rid not in {i["id"] for i in items}]
-        path.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in ordered) + "\n", encoding="utf-8")
+        tmp = path.with_name(path.name + ".tmp")
+        tmp.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in ordered) + "\n", encoding="utf-8")
+        tmp.replace(path)  # yarım yazılmış dosya bırakmaz
         mark = "GEÇTİ" if rec["passed"] else ("kısmen (yalnızca içerik)" if rec["passed_loose"] else "KALDI")
         out(f"  {n}/{len(todo)} {item['id']:<4} {mark:<26} {rec['steps']} adım  {rec['latency_s']:>7} sn  [{rec['status']}]")
         if rec["status"] == "llm_error" and "Günlük kota" in rec["answer"]:
@@ -221,10 +253,14 @@ def main() -> None:
             changed = rescore(all_items, result_path(system, args.model, args.tag))
             print(f"[{system}] yeniden puanlandı, {changed} maddenin sonucu değişti")
     elif not args.report:
-        llm = functools.partial(generate, model=args.model)
-        for system in (["baseline", "agent"] if args.system == "both" else [args.system]):
-            run_system(system, select_items(all_items, args.ids), llm, args.model, args.max_steps,
-                       result_path(system, args.model, args.tag), args.force, args.retry_errors, args.pause)
+        acquire_lock()
+        try:
+            llm = functools.partial(generate, model=args.model)
+            for system in (["baseline", "agent"] if args.system == "both" else [args.system]):
+                run_system(system, select_items(all_items, args.ids), llm, args.model, args.max_steps,
+                           result_path(system, args.model, args.tag), args.force, args.retry_errors, args.pause)
+        finally:
+            release_lock()
     records = {s: load_results(result_path(s, args.model, args.tag)) for s in ("baseline", "agent")}
     label = f"{args.model}" + (f" ({args.tag})" if args.tag else "")
     report = f"Model: {label}\n\n" + format_report(all_items, records)

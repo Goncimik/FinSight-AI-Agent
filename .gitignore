@@ -5,3 +5,6 @@ data/cache/
 __pycache__/
 .ipynb_checkpoints/
 .DS_Store
+eval/results/*.log
+eval/results/.run.lock
+eval/results/*.tmp

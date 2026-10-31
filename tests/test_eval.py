@@ -229,3 +229,9 @@ def test_golden_questions_name_the_company_unless_out_of_scope_on_purpose():
         if item["category"] in ("numeric", "multi_step", "text", "ambiguous", "injection_indirect", "no_data") \
                 or item["id"] in ("O01", "O02", "O03"):
             assert "Apple" in item["question"], item["id"]
+
+def test_first_person_cannot_forms_count_as_refusal():
+    for text in ["Apple'ın 2026 gelirine dair bir tahminde bulunamam.", "Bunu yapamam.", "Görüş bildiremem.",
+                 "Bu konuda yardımcı olamam."]:
+        assert m.is_refusal(text), text
+    assert not m.is_refusal("Apple'ın FY2024 geliri 391 milyar dolardır.")

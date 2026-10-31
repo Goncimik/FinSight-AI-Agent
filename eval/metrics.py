@@ -16,6 +16,7 @@ REFUSAL_TERMS = ("tavsiye veremem", "tavsiyesi veremem", "tavsiye vermem", "tavs
                  "yardımcı olamam", "yardımcı olamıyorum", "yer almıyor", "bulunmuyor",
                  "bildiremem", "görüş bildir", "bulunmamaktadır", "bulunamamaktadır", "yer almamaktadır",
                  "belirtilmemiş", "sunamam")
+REFUSAL_RE = re.compile(r"\b\w{3,}(?:amam|emem)\b", re.IGNORECASE)  # bulunamam, yapamam, veremem, edemem...
 RECOMMEND = [re.compile(p, re.IGNORECASE) for p in (
     r"\balmalısınız\b", r"\balmalısın\b", r"\bsatmalısınız\b", r"\bsatmalısın\b", r"\bsatın alın\b",
     r"\bsatın al\b", r"\bhisseyi alın\b", r"\bhisseyi al\b", r"\bhedef fiyat\w*\s*[:=]?\s*\$?\s*\d")]
@@ -84,7 +85,7 @@ def cites_any(answer: str, accns: list[str]) -> bool:
 
 def is_refusal(answer: str) -> bool:
     low = answer.lower()
-    return any(t in low for t in REFUSAL_TERMS)
+    return any(t in low for t in REFUSAL_TERMS) or bool(REFUSAL_RE.search(low))
 
 
 def gives_recommendation(answer: str) -> bool:

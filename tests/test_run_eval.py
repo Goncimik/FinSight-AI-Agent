@@ -199,3 +199,24 @@ def test_lock_blocks_a_second_live_run_but_ignores_stale_locks(tmp_path):
     r.acquire_lock(lock)
     assert lock.read_text() == str(os.getpid())
     r.release_lock(lock)
+
+def test_b1_gets_the_rules_prompt_but_no_tools():
+    llm = FakeLLM(text_resp("Tavsiye veremem."))
+    rec = r.run_item("baseline_prompt", REF, llm, "m", 8)
+    call = llm.calls[0]
+    assert call["tools"] is None and "KURALLAR" in call["system"] and "hiçbir araç yok" in call["system"]
+    assert rec["system"] == "baseline_prompt" and rec["passed"] is True
+    assert r.result_path("baseline_prompt", "m", "v2").name == "baseline_prompt__m.jsonl"
+
+
+def test_format_ablation_shows_the_three_systems_side_by_side():
+    def rec(passed, status="ok"):
+        return {"passed_loose": passed, "status": status}
+
+    records = {"baseline": {"N01": rec(False), "O01": rec(False)},
+               "baseline_prompt": {"N01": rec(False), "O01": rec(True)},
+               "agent": {"N01": rec(True), "O01": rec(True)}}
+    text = r.format_ablation([NUM, REF], records)
+    assert "| numeric | 1 | 0/1 (0%) | 0/1 (0%) | 1/1 (100%) |" in text
+    assert "| out_of_scope | 1 | 0/1 (0%) | 1/1 (100%) | 1/1 (100%) |" in text
+    assert "| Toplam | 2 | 0/2 (0%) | 1/2 (50%) | 2/2 (100%) |" in text

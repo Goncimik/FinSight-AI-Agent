@@ -27,7 +27,7 @@ from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
-DEFAULT_MODEL = "gemini-3.5-flash"  # sabit sürüm; 'latest' takma adı eval'i tekrarlanamaz yapar
+DEFAULT_MODEL = "gemini-3.1-flash-lite"  # sabit sürüm; 'latest' takma adı eval'i tekrarlanamaz yapar
 DEFAULT_THINKING_LEVEL = "low"
 RETRY_STATUS = {429, 500, 502, 503, 504}
 MAX_QUOTA_WAIT = 120.0  # bundan uzun bekleme isteyen 429 günlük kota sayılır

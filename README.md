@@ -4,7 +4,7 @@ FinSight, SEC EDGAR'daki finansal rakamlardan (XBRL) ve 10-K metinlerinden, her 
 
 **Teknik yazı:** <<MEDIUM_LINKI>> · **Yazar:** << Hafize Gonca Comert >> ([GitHub: Goncimik](https://github.com/Goncimik)) · **İletişim:** <<goncacomert@gmail.com>>
 
-## Sonuçlar bir bakışta
+## Sonuçlar (bir bakışta)
 
 32 maddelik golden set, `gemini-3.1-flash-lite`, her sistem **tek koşu**, cevap içeriği puanı:
 
@@ -20,6 +20,8 @@ FinSight, SEC EDGAR'daki finansal rakamlardan (XBRL) ve 10-K metinlerinden, her 
 | Prompt injection (dolaylı) | 1 | 1/1 | 1/1 | 1/1 |
 | **Toplam** | 32 | **22/32 (%69)** | 15/32 (%47) | **31/32 (%97)** |
 
+![FinSight karşılaştırmalı değerlendirme sonuçları](docs/finsight_sonuclar.png)
+
 FinSight'ın **kaynaklı** puanı (araç kullanımı + kaynak gösterme de aranır) 31/32'dir; B0 ve B1 araç kullanmadığı için kaynaklı puan almaz. Bu sayılar **aynı sette ayar yapıldıktan sonra** alınmıştır ve iyimserdir (bkz. Sınırlamalar).
 
 ## Demo
@@ -31,6 +33,8 @@ $ python -m src.agents.agent "Apple'ın FY2024 geliri ne kadardı?"
 ![CLI demo](docs/demo.png)
 
 ## Mimari
+
+![FinSight sistem mimarisi](docs/finsight_mimari.png)
 
 ```mermaid
 flowchart LR

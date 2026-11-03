@@ -1,10 +1,18 @@
-# FinSight: SEC 10-K ve XBRL tabanlı araştırma ajanı
+
+# 🔎 FinSight | SEC 10-K ve XBRL Tabanlı Araştırma Ajanı
+
+![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
+![Gemini](https://img.shields.io/badge/Google-Gemini-8E75B2?logo=googlegemini&logoColor=white)
+![SEC EDGAR](https://img.shields.io/badge/Data-SEC_EDGAR-1B365D)
+![Tools](https://img.shields.io/badge/Tools-4_Read--Only-2EA66A)
+![Tests](https://img.shields.io/badge/Tests-135_Passed-2EA66A)
+
 
 FinSight, SEC EDGAR'daki finansal rakamlardan (XBRL) ve 10-K metinlerinden, her sayısı ve iddiası kaynaklı yanıt üreten bir AI agent sistemidir. Yatırım tavsiyesi vermez. AI Agents Bootcamp 2026 final projesi (Temel seviye, tek şirket: Apple).
 
 **Teknik yazı:** <<MEDIUM_LINKI>> · **Yazar:** << Hafize Gonca Comert >> ([GitHub: Goncimik](https://github.com/Goncimik)) · **İletişim:** <<goncacomert@gmail.com>>
 
-## Sonuçlar (bir bakışta)
+## 📊 Sonuçlar
 
 32 maddelik golden set, `gemini-3.1-flash-lite`, her sistem **tek koşu**, cevap içeriği puanı:
 
@@ -24,7 +32,7 @@ FinSight, SEC EDGAR'daki finansal rakamlardan (XBRL) ve 10-K metinlerinden, her 
 
 FinSight'ın **kaynaklı** puanı (araç kullanımı + kaynak gösterme de aranır) 31/32'dir; B0 ve B1 araç kullanmadığı için kaynaklı puan almaz. Bu sayılar **aynı sette ayar yapıldıktan sonra** alınmıştır ve iyimserdir (bkz. Sınırlamalar).
 
-## Demo
+## 💻 Demo
 
 ```
 $ python -m src.agents.agent "Apple'ın FY2024 geliri ne kadardı?"
@@ -32,7 +40,7 @@ $ python -m src.agents.agent "Apple'ın FY2024 geliri ne kadardı?"
 
 ![CLI demo](docs/demo.png)
 
-## Mimari
+## 🏗️ Mimari
 
 ![FinSight sistem mimarisi](docs/finsight_mimari.png)
 
@@ -56,7 +64,7 @@ flowchart LR
 
 Tek agent (Temel seviye). Model, gözleme bakarak sıradaki aracı seçer; sayılar yalnızca XBRL araçlarından, açıklamalar yalnızca 10-K metninden gelir. Dört aracın hepsi **salt okunurdur**.
 
-## Teknoloji seçimleri ve gerekçeler
+## 🛠️ Teknoloji Seçimleri ve Gerekçeler
 
 - **Framework: yok (doğrudan Gemini REST API, `httpx`).** Sıfır ek bağımlılık (Python 3.14 uyumluluk riski yok), her istek ve yanıt görünür, token ve gecikme doğrudan ölçülür, döngü ve hata yönetimi bizde. Rehber "doğrudan model SDK'sı"nı kabul ediyor.
 - **LLM: Gemini ücretsiz katmanı.** Değerlendirmenin tamamı `gemini-3.1-flash-lite` ile yapıldı (kota gerekçesiyle, aşağıda). `thinking_level=low`; `temperature` gönderilmez (bu model ailesinde kullanımdan kalkmış sayılıyor).
@@ -65,13 +73,13 @@ Tek agent (Temel seviye). Model, gözleme bakarak sıradaki aracı seçer; sayı
 - **Test: pytest, 135 birim testi** (sahte LLM ve sahte sunucuyla; ağa çıkmaz).
 - **Gözlemlenebilirlik:** Her koşu için adım, araç çağrısı, süre ve token bilgisi `data/cache/traces/runs.jsonl` ve `eval/results/*.jsonl` dosyalarına yazılır. Harici bir izleme aracı (Phoenix, Langfuse) kullanılmadı; Temel seviyede log yeterli.
 
-## Veri kaynakları ve lisanslar
+## 📚 Veri Kaynakları ve Lisanslar
 
 - **SEC EDGAR XBRL `companyfacts` ve 10-K HTML dosyaları**: ABD hükümeti kamu verisi, API anahtarı gerekmez. SEC'in erişim yönergelerine uyulur: her istekte kimlik bildiren `User-Agent`, saniyede en fazla ~5 istek (SEC sınırı 10).
 - **Kapsam:** Apple Inc. (AAPL, CIK 320193), FY2021–FY2025, 5 adet 10-K. Ham veri repoya girmez (`data/raw/` `.gitignore`'da), `scripts/download_edgar.py` indirir.
 - Gerçek kişisel veri kullanılmaz.
 
-## Kurulum (temiz makinede yaklaşık 10 dakika)
+## ⚙️ Kurulum
 
 Python 3.10 veya üstü gerekir.
 
@@ -96,7 +104,7 @@ LLM_MIN_INTERVAL=4 python -u -m eval.run_eval --system all --model gemini-3.1-fl
 python -m eval.run_eval --report --model gemini-3.1-flash-lite --tag v2 --ablation
 ```
 
-## Değerlendirme: yöntem
+## 📈 Değerlendirme
 
 - **Golden set (32 madde):** 11 sayısal, 2 çok adımlı, 9 metin, 5 kapsam dışı/veri yok, 2 belirsiz, 3 prompt injection (biri dolaylı: arama sonucuna gizlenmiş talimat).
 - **Bağımsız cevap anahtarı:** Sayısal cevaplar agent'ın tool'larından değil, ham `companyfacts.json`'dan ayrı ve basit kodla çıkarılır, ardından aynı rakamlar 10-K metninin kendisinde aranarak doğrulanır (`python -m eval.golden`: "hepsi 10-K'da bulundu").
@@ -105,7 +113,7 @@ python -m eval.run_eval --report --model gemini-3.1-flash-lite --tag v2 --ablati
 - **Retrieval ölçümü** (9 metin sorusu, referans sorgu, k=5): doğru yıl/bölümde cevaplanabilir 9/9; BM25 hit@5 filtreli 9/9, filtresiz 8/9.
 - **İstatistik:** B0 22/32 için Wilson %95 aralığı %51–82, FinSight 31/32 için %84–99. Eşleştirilmiş kesin test (B0 ile FinSight, 10 maddede yalnızca FinSight doğru, 1 maddede tersi): p ≈ 0,012. Yalnızca sayısal + çok adımlı 13 madde: 6'sında yalnızca FinSight doğru, tersi yok, p ≈ 0,031. **Bu testler aynı sette ayar yapıldığı için iyimserdir.**
 
-## Repoda yazılı olarak cevaplanması gereken sorular
+## 📝 Cevaplanması Gereken Sorular
 
 ### 1. Problem
 **Kim, ne çözüyor:** Portföy şirketindeki bir junior analist, bir şirket için ilk bakış notunu hazırlarken 10-K'yı okuyup rakamları elle tabloya taşıyor; yanlış mali yıl, düzeltilmiş rakam yerine eski rakam ve birim karışıklığı gibi hatalar çıkıyor, kaynak çoğu zaman yazılmıyor. FinSight, rakamları ve iddiaları kaynaklı verir. **Başarı ölçütü:** golden sette sayısal doğruluk, kaynak gösterme, tavsiye talebini reddetme ve injection direnci (aşağıdaki tablolar). Gerçek bir analist süresi kazancı bu çalışmada **ölçülmedi**.
@@ -150,7 +158,7 @@ Dört tool: `resolve_ticker_to_cik` (ticker → CIK), `get_company_facts` (yıll
 ### 10. Canlıya çıkış
 Önerilen izleme (bu repoda uygulanmadı, öneridir): her yeni 10-K yayımlandığında veri indirme ve indeksleme zamanlanmış çalışır; golden set bir regresyon testi olarak CI'da koşar. Eşikler: sayısal doğruluk < %95, kaynak gösterme oranı < %95, tavsiye reddi < %99 olursa alarm; araç hata oranı, ortalama adım sayısı ve token/soru için hareketli ortalama sapması alarm; XBRL etiket değişimi (yeni bir kavram etiketi) için "veri bulunamadı" oranı alarmı. İnsan onayı: finansal çıktı analist onayından geçmeden kullanılmaz (sistem bir taslak üretir).
 
-## Bilinen sınırlamalar ve yol haritası
+## 🚀 Bilinen Sınırlamalar ve Yol Haritası
 
 - **Aynı sette ayar:** puanlayıcı, prompt ve soru metinleri sonuçlar görüldükten sonra düzeltildi; %97 genel bir başarı oranı değildir. Hiç görülmemiş taze bir test seti ile doğrulanmadı.
 - **Küçük örneklem, tek koşu, model deterministik değil:** bir madde yaklaşık 3 puan eder; v1'den v2'ye değişim gürültü sınırında.
@@ -161,7 +169,7 @@ Dört tool: `resolve_ticker_to_cik` (ticker → CIK), `get_company_facts` (yıll
 - **Yalnızca Item 1, 1A ve 7** indekslenir; 10-Q, dipnotlar ve tablolar yok.
 - **Bu sürümde olmayanlar (Hedef seviye):** MCP server, multi-agent orkestrasyon, LLM-as-judge, ≥5'lik injection test seti, herkese açık demo, CI ve Docker.
 
-## Repo yapısı
+## 📁 Repo Yapısı
 
 ```
 src/llm.py              Gemini REST istemcisi (yeniden deneme, kota, token/gecikme)

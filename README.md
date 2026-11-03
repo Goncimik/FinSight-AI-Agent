@@ -2,7 +2,7 @@
 
 FinSight, SEC EDGAR'daki finansal rakamlardan (XBRL) ve 10-K metinlerinden, her sayısı ve iddiası kaynaklı yanıt üreten bir AI agent sistemidir. Yatırım tavsiyesi vermez. AI Agents Bootcamp 2026 final projesi (Temel seviye, tek şirket: Apple).
 
-**Teknik yazı:** <<MEDIUM_LINKI>> · **Yazar:** <<AD_SOYAD>> ([GitHub: Goncimik](https://github.com/Goncimik)) · **İletişim:** <<EPOSTA>>
+**Teknik yazı:** <<MEDIUM_LINKI>> · **Yazar:** << Hafize Gonca Comert >> ([GitHub: Goncimik](https://github.com/Goncimik)) · **İletişim:** <<goncacomert@gmail.com>>
 
 ## Sonuçlar bir bakışta
 
@@ -170,6 +170,3 @@ scripts/download_edgar.py   SEC veri indirici (önbellekli, hız sınırlı)
 tests/                  135 birim testi
 ```
 
-## Yapay zekâ kullanım beyanı
-
-Bu projenin kodu, testleri ve bu README'nin ilk taslağı **Claude (Anthropic) ile birlikte** geliştirilmiştir. Mimari kararlar, veri doğrulama ve sonuçların yorumu yazar tarafından gözden geçirilmiştir. Yayımlanan teknik yazıda da yapay zekâ desteği belirtilmiştir.

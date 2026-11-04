@@ -1,8 +1,6 @@
 
 # 🕵️ FinSight | SEC 10-K ve XBRL Tabanlı Araştırma Ajanı
 
-![FinSight Kapak](docs/finsight_kapak.png)
-
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
 ![Gemini](https://img.shields.io/badge/Google-Gemini-8E75B2?logo=googlegemini&logoColor=white)
 ![SEC EDGAR](https://img.shields.io/badge/Data-SEC_EDGAR-1B365D)
@@ -10,9 +8,11 @@
 ![Tests](https://img.shields.io/badge/Tests-135_Passed-2EA66A)
 
 
-FinSight, SEC EDGAR'daki finansal rakamlardan (XBRL) ve 10-K metinlerinden, her sayısı ve iddiası kaynaklı yanıt üreten bir AI agent sistemidir. Yatırım tavsiyesi vermez. AI Agents Bootcamp 2026 final projesi (Temel seviye, tek şirket: Apple).
+FinSight, SEC EDGAR'daki finansal rakamlardan (XBRL) ve 10-K metinlerinden, her sayısı ve iddiası kaynaklı yanıt üreten bir AI agent sistemidir. Yatırım tavsiyesi vermez. AI Agents Bootcamp 2026 final projesidir.
 
 **Teknik yazı:** <<MEDIUM_LINKI>> · **Yazar:** << Hafize Gonca Comert >> ([GitHub: Goncimik](https://github.com/Goncimik)) · **İletişim:** <<goncacomert@gmail.com>>
+
+![FinSight Kapak](docs/finsight_kapak.png)
 
 ## 📊 Sonuçlar
 
@@ -32,7 +32,7 @@ FinSight, SEC EDGAR'daki finansal rakamlardan (XBRL) ve 10-K metinlerinden, her 
 
 ![FinSight karşılaştırmalı değerlendirme sonuçları](docs/finsight_sonuclar.png)
 
-FinSight'ın **kaynaklı** puanı (araç kullanımı + kaynak gösterme de aranır) 31/32'dir; B0 ve B1 araç kullanmadığı için kaynaklı puan almaz. Bu sayılar **aynı sette ayar yapıldıktan sonra** alınmıştır ve iyimserdir (bkz. Sınırlamalar).
+FinSight'ın **kaynaklı** puanı (araç kullanımı + kaynak gösterme de aranır) 31/32'dir; B0 ve B1 araç kullanmadığı için kaynaklı puan almaz. Bu sayılar **aynı sette ayar yapıldıktan sonra** alınmıştır ve iyimserdir.
 
 ## 💻 Demo
 
@@ -159,6 +159,8 @@ Dört tool: `resolve_ticker_to_cik` (ticker → CIK), `get_company_facts` (yıll
 
 ### 10. Canlıya çıkış
 Önerilen izleme (bu repoda uygulanmadı, öneridir): her yeni 10-K yayımlandığında veri indirme ve indeksleme zamanlanmış çalışır; golden set bir regresyon testi olarak CI'da koşar. Eşikler: sayısal doğruluk < %95, kaynak gösterme oranı < %95, tavsiye reddi < %99 olursa alarm; araç hata oranı, ortalama adım sayısı ve token/soru için hareketli ortalama sapması alarm; XBRL etiket değişimi (yeni bir kavram etiketi) için "veri bulunamadı" oranı alarmı. İnsan onayı: finansal çıktı analist onayından geçmeden kullanılmaz (sistem bir taslak üretir).
+
+![FinSight Hatalar ve Çözümler](docs/finsight_hatalar.png)
 
 ## 🚀 Bilinen Sınırlamalar ve Yol Haritası
 

@@ -10,7 +10,7 @@
 
 FinSight, SEC EDGAR'daki finansal rakamlardan (XBRL) ve 10-K metinlerinden, her sayısı ve iddiası kaynaklı yanıt üreten bir AI agent sistemidir. Yatırım tavsiyesi vermez. AI Agents Bootcamp 2026 final projesidir.
 
-**Teknik yazı:** <<MEDIUM_LINKI>> · **Yazar:** << Hafize Gonca Comert >> ([GitHub: Goncimik](https://github.com/Goncimik)) · **İletişim:** <<goncacomert@gmail.com>>
+**Yazar:**  [Goncimik](https://github.com/Goncimik)
 
 ![FinSight Kapak](docs/finsight_kapak.png)
 

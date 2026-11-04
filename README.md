@@ -1,6 +1,8 @@
 
 # 🕵️ FinSight | SEC 10-K ve XBRL Tabanlı Araştırma Ajanı
 
+![FinSight Kapak](docs/finsight_kapak.png)
+
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
 ![Gemini](https://img.shields.io/badge/Google-Gemini-8E75B2?logo=googlegemini&logoColor=white)
 ![SEC EDGAR](https://img.shields.io/badge/Data-SEC_EDGAR-1B365D)

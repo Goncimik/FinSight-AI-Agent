@@ -1,5 +1,5 @@
 
-# 🔎 FinSight | SEC 10-K ve XBRL Tabanlı Araştırma Ajanı
+# 🕵️ FinSight | SEC 10-K ve XBRL Tabanlı Araştırma Ajanı
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
 ![Gemini](https://img.shields.io/badge/Google-Gemini-8E75B2?logo=googlegemini&logoColor=white)
@@ -73,7 +73,7 @@ Tek agent (Temel seviye). Model, gözleme bakarak sıradaki aracı seçer; sayı
 - **Test: pytest, 135 birim testi** (sahte LLM ve sahte sunucuyla; ağa çıkmaz).
 - **Gözlemlenebilirlik:** Her koşu için adım, araç çağrısı, süre ve token bilgisi `data/cache/traces/runs.jsonl` ve `eval/results/*.jsonl` dosyalarına yazılır. Harici bir izleme aracı (Phoenix, Langfuse) kullanılmadı; Temel seviyede log yeterli.
 
-## 📚 Veri Kaynakları ve Lisanslar
+## 📑 Veri Kaynakları ve Lisanslar
 
 - **SEC EDGAR XBRL `companyfacts` ve 10-K HTML dosyaları**: ABD hükümeti kamu verisi, API anahtarı gerekmez. SEC'in erişim yönergelerine uyulur: her istekte kimlik bildiren `User-Agent`, saniyede en fazla ~5 istek (SEC sınırı 10).
 - **Kapsam:** Apple Inc. (AAPL, CIK 320193), FY2021–FY2025, 5 adet 10-K. Ham veri repoya girmez (`data/raw/` `.gitignore`'da), `scripts/download_edgar.py` indirir.

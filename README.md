@@ -19,7 +19,7 @@ Finansal araştırmada doğru rakamı bulmak kadar, o rakamın hangi döneme ait
 
 ![FinSight Kapak](docs/finsight_kapak.png)
 
-**Teknik yazı:** [Medium'da oku](BURAYA_MEDIUM_ADRESİ)
+[Goncimik](https://github.com/Goncimik)
 
 ## 🎯 Neden FinSight?
 
@@ -368,7 +368,7 @@ FinSight-AI-Agent/
 
 **FinSight**, AI Agents Bootcamp 2026 kapsamında geliştirilen eğitim ve araştırma amaçlı bir projedir.
 
-[Goncimik](https://github.com/Goncimik)
+**Teknik yazı:** [Medium'da oku](https://medium.com/@goncacomert/%EF%B8%8F-%EF%B8%8F-finsight-ile-bir-ai-agent-geli%C5%9Ftirme-hikayesi-c5595de5615f)
 
 Geliştirme ve dokümantasyon süreçlerinde yapay zekâ araçlarından destek alınmıştır. Nihai kodun, değerlendirmelerin ve proje içeriğinin sorumluluğu geliştiriciye aittir.
 

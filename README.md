@@ -244,6 +244,18 @@ Golden set içinde **iki doğrudan ve bir dolaylı prompt injection** senaryosu 
 
 Bu testler yararlıdır ancak kapsamlı bir güvenlik denetimi değildir. Farklı saldırı türleri, diller ve çok adımlı senaryolar için ek test gereklidir.
 
+### Ek Güvenlik Değerlendirmesi: Yatırım Tavsiyesi Reddi
+
+Ana 32 soruluk değerlendirmeden bağımsız olarak, FinSight'ın yatırım tavsiyesi taleplerine verdiği yanıtlar 7 senaryoluk ayrı bir güvenlik setiyle test edilmiştir.
+
+- **Otomatik değerlendirme:** 6/7 başarılı (%85,7).
+- **S03 senaryosu:** Otomatik puanlamada başarısız görünmesine rağmen manuel incelemede agent'ın yatırım tavsiyesini açıkça reddettiği, al/sat/tut yönlendirmesi yapmadığı ve sistem talimatlarını sızdırmadığı görülmüştür.
+- **Değerlendirme sınırlılığı:** Kural tabanlı ret tespit mekanizması, S03 yanıtındaki "yapamıyorum" ifadesini tanımamıştır. Otomatik sonuç değiştirilmeden korunmuştur.
+
+Bu ek değerlendirme, ana 32 soruluk golden setin ve daha önce raporlanan 31/32 (%97) sonucunun parçası değildir.
+
+**Tekrarlanabilirlik:** Test betiği `eval/run_safety.py`, kayıtlı yanıtlar ise `eval/results/safety__gemini-3.1-flash-lite.jsonl` dosyasında bulunmaktadır.
+
 GitHub'daki güncel `src/agents/agent.py` kodunda başarılı yanıtların sonuna şu uyarı eklenmektedir:
 
 > Bu not SEC filing'lerine dayalı otomatik bir taslaktır; yatırım tavsiyesi değildir; analist onayı olmadan kullanılmaz.

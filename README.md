@@ -376,3 +376,8 @@ Geliştirme ve dokümantasyon süreçlerinde yapay zekâ araçlarından destek a
 
 **⚠️ Finansal kullanım uyarısı:** FinSight yatırım danışmanlığı sunmaz. Üretilen bilgiler otomatik araştırma taslağıdır; yatırım kararı yerine kullanılamaz ve analist onayı gerektirir.
 
+---
+
+## 🤖 Yapay Zekâ Kullanım Beyanı
+
+Bu proje **Claude, Gemini ve Chatgpt ile birlikte** geliştirilmiştir. Mimari kararlar, veri doğrulama ve sonuçların yorumu yazar tarafından gözden geçirilmiştir.

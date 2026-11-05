@@ -1,5 +1,5 @@
 
-# 🕵️ FinSight | SEC 10-K ve XBRL Tabanlı Araştırma Ajanı
+# 🕵️‍♀️ FinSight | SEC 10-K ve XBRL Tabanlı Araştırma Ajanı
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
 ![Gemini](https://img.shields.io/badge/Google-Gemini-8E75B2?logo=googlegemini&logoColor=white)

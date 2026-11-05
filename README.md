@@ -370,8 +370,6 @@ FinSight-AI-Agent/
 
 **Teknik yazı:** [Medium'da oku](https://medium.com/@goncacomert/%EF%B8%8F-%EF%B8%8F-finsight-ile-bir-ai-agent-geli%C5%9Ftirme-hikayesi-c5595de5615f)
 
-Geliştirme ve dokümantasyon süreçlerinde yapay zekâ araçlarından destek alınmıştır. Nihai kodun, değerlendirmelerin ve proje içeriğinin sorumluluğu geliştiriciye aittir.
-
 ---
 
 **⚠️ Finansal kullanım uyarısı:** FinSight yatırım danışmanlığı sunmaz. Üretilen bilgiler otomatik araştırma taslağıdır; yatırım kararı yerine kullanılamaz ve analist onayı gerektirir.

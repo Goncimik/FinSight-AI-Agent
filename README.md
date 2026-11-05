@@ -19,7 +19,7 @@ Finansal araştırmada doğru rakamı bulmak kadar, o rakamın hangi döneme ait
 
 ![FinSight Kapak](docs/finsight_kapak.png)
 
-[Goncimik](https://github.com/Goncimik)
+**Teknik yazı:** [Medium'da oku](BURAYA_MEDIUM_ADRESİ)
 
 ## 🎯 Neden FinSight?
 

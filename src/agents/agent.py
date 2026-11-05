@@ -133,6 +133,14 @@ def run_agent(question: str, max_steps: int = 6, llm=generate, tools: list[dict]
             answer = "Aynı araç çağrısı tekrarlandığı için durduruldu; cevap tamamlanamadı."
             break
 
+    if status == "ok":
+        disclaimer = (
+            "Bu not SEC filing'lerine dayalı otomatik bir taslaktır; "
+            "yatırım tavsiyesi değildir; analist onayı olmadan kullanılmaz."
+        )
+        if disclaimer not in answer:
+            answer = answer.rstrip() + "\n\n" + disclaimer
+
     out = {"question": question, "answer": answer, "status": status, "steps": len(trace),
            "model": model, "usage": usage, "latency_s": round(time.monotonic() - started, 3), "trace": trace,
            "trace_path": None}

@@ -322,6 +322,14 @@ Finansal kayıtlarda dönem başlangıcı, dönem sonu ve kaynak dosyalama bilgi
 
 Bu yaklaşım Apple için kullanılmıştır; mali yılı ocak ayında biten bazı şirketlerde hatalı etiketlemeye neden olabilir. **Şirketler arası mali yıl karşılaştırması bu sürümde yapılmamıştır.**
 
+### Veri Dönemi ve Yeniden Üretilebilirlik
+
+FinSight'ın mevcut değerlendirmesi, Apple'ın **FY2021–FY2025** dönemindeki beş 10-K raporuna dayanmaktadır. Raporlanan 32 soruluk golden set, 561 metin parçası (chunk) ve **31/32 (%97)** sonucu bu değerlendirme kapsamına aittir.
+
+`scripts/download_edgar.py` dosyası, belirli mali yılları sabitlemek yerine SEC'de erişilebilir en güncel beş 10-K raporunu indirir. Apple'ın FY2026 raporunun 3 Kasım 2026'da yayımlanması nedeniyle, güncel bir sıfırdan kurulumda **FY2022–FY2026** dönemi elde edilebilir.
+
+Bu nedenle yeni indirilen verilerle özgün değerlendirme ortamının ve sonuçlarının birebir yeniden üretileceği garanti edilmez. Mevcut değerlendirme sonuçları FY2021–FY2025 kapsamına aittir. Gelecek geliştirmelerde mali yıl aralığının ve veri sürümünün sabitlenmesi planlanmaktadır.
+
 ### Bölümleme ve chunk seçiminin sınırları neler?
 
 Bölüm tespitinde içindekiler tablosundaki yanıltıcı başlıklara karşı en uzun uygun metin dilimi seçilir; bulunamayan bölümler hata olarak kaydedilir.

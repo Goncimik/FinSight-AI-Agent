@@ -50,7 +50,7 @@ def run(llm, tools=None, **kwargs):
 def test_answers_directly_without_tools():
     llm = ScriptedLLM(text_resp("Merhaba"))
     out = run(llm)
-    assert out["status"] == "ok" and out["answer"] == "Merhaba" and out["steps"] == 1
+    assert out["status"] == "ok" and out["answer"].startswith("Merhaba\n\n") and "yatırım tavsiyesi değildir" in out["answer"] and out["steps"] == 1
     assert out["trace"][0]["tool_calls"] == [] and out["trace"][0]["final"] is True
     assert llm.calls[0]["system"] == "SİSTEM"
     assert llm.calls[0]["history"][0]["parts"][0]["text"] == "Soru?"
